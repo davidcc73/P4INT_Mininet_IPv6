@@ -1,6 +1,6 @@
 # P4INT_Mininet_IPv6
 Fork of project (ruimmpires/P4INT_Mininet) found at https://github.com/ruimmpires/P4INT_Mininet that implements INT in Mininet environment where the switches use P4.
-This repository aims to adapt that solution FROM IPv4 to IPv6
+This repository aims to adapt that solution from IPv4 to IPv6
 
 
 # P4INT_Mininet Original README.md
