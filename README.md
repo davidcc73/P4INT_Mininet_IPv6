@@ -1,4 +1,9 @@
-# P4INT_Mininet
+# P4INT_Mininet_IPv6
+Fork of project (ruimmpires/P4INT_Mininet) found at https://github.com/ruimmpires/P4INT_Mininet that implements INT in Mininet environment where the switches use P4.
+This repository aims to adapt that solution FROM IPv4 to IPv6
+
+
+# P4INT_Mininet Original README.md
 SDN P4 INT deployed in Mininet and security analysis
 You can find a similar version running in P4PI, i.e. P4 for RaspBerry PI in https://github.com/ruimmpires/P4INT_P4PI
 
