@@ -25,6 +25,18 @@ header ipv4_t {
 }
 const bit<8> IPV4_MIN_HEAD_LEN = 20;
 
+header ipv6_t {
+    bit<4>  version;
+    bit<8>  traffic_class;
+    bit<20> flow_label;
+    bit<16> payload_len;
+    bit<8>  next_header;
+    bit<8>  hop_limit;
+    bit<128> src_addr;
+    bit<128> dst_addr;
+}
+const bit<8> IPV6_BASE_HEAD_LEN = 40;
+
 header tcp_t {
     bit<16> src_port;
     bit<16> dst_port;
