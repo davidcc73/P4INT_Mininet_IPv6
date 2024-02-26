@@ -5,7 +5,7 @@
 #include "defines.p4"
 #include "headers.p4"
 #include "int_headers.p4"
-#include "parser.p4"
+#include "(de)parser.p4"
 #include "checksum.p4"
 #include "forward.p4"
 #include "int_source.p4"
@@ -15,7 +15,7 @@
 
 
 /*************************************************************************
-****************  I N G R E S S   P R O C E S S I N G   ******************
+****************  I N G R E S S   P R O C E S S I N G   ****************** (SOURCE NODE)
 *************************************************************************/
 
 control MyIngress(inout headers hdr,
@@ -27,23 +27,23 @@ control MyIngress(inout headers hdr,
         if (hdr.arp.isValid()){
             arpreply.apply(hdr, local_metadata, standard_metadata);
         }
-        else if(hdr.ipv4.isValid()) {
+        else if(hdr.ipv6.isValid()) {  //FOR TESTING COMMENT ALL INT OPERATIONS
             //arplearn.apply(hdr, local_metadata, standard_metadata);
             l3_forward.apply(hdr, local_metadata, standard_metadata);
         
-            if(hdr.udp.isValid() ) {
+            if(hdr.udp.isValid() ) {                            //set if current hop is source or a sink to the packet (ONLY FOR UDP)
                 process_int_source_sink.apply(hdr, local_metadata, standard_metadata);
             }
             
-            if (local_metadata.int_meta.source == true) {
+            if (local_metadata.int_meta.source == true) {       //(source) INSERT INT INSTRUCTIONS HEADER
                 process_int_source.apply(hdr, local_metadata);
             } 
 
-            if (local_metadata.int_meta.sink == true && hdr.int_header.isValid()) {
+            if (local_metadata.int_meta.sink == true && hdr.int_header.isValid()) { //(sink) AND THE INSTRUCTION HEADER IS VALID
                 // clone packet for Telemetry Report
                 // clone3(CloneType.I2E, REPORT_MIRROR_SESSION_ID,standard_metadata);
                 // clone(CloneType.I2E, REPORT_MIRROR_SESSION_ID);
-                local_metadata.perserv_meta.ingress_port = standard_metadata.ingress_port;
+                local_metadata.perserv_meta.ingress_port = standard_metadata.ingress_port;      //prepare info for report
                 local_metadata.perserv_meta.egress_port = standard_metadata.egress_port;
                 local_metadata.perserv_meta.deq_qdepth = standard_metadata.deq_qdepth;
                 local_metadata.perserv_meta.ingress_global_timestamp = standard_metadata.ingress_global_timestamp;
@@ -54,7 +54,7 @@ control MyIngress(inout headers hdr,
 }
 
 /*************************************************************************
-****************  E G R E S S   P R O C E S S I N G   *******************
+****************  E G R E S S   P R O C E S S I N G   ******************** (TRANSIT AND SINK NODE)
 *************************************************************************/
 
 
@@ -70,8 +70,8 @@ control MyEgress(inout headers hdr,
                 standard_metadata.deq_qdepth = local_metadata.perserv_meta.deq_qdepth;
                 standard_metadata.ingress_global_timestamp = local_metadata.perserv_meta.ingress_global_timestamp;
             }
-
-            process_int_transit.apply(hdr, local_metadata, standard_metadata);
+//FIQUEI AQUI!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            process_int_transit.apply(hdr, local_metadata, standard_metadata);   //(transit) INFO ADDED TO PACKET AT DEPARSER
 
             if (standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE) {
                 /* send int report */

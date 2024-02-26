@@ -12,7 +12,7 @@ sudo python collector_influxdb.py
 python receive/receive.py 
 
 # At a h2 terminal run:
-python send/send.py --ip 10.0.3.2 --l4 udp --port 443 --m INTH1 --c 1
+python send/send.py --ip 2001:db8::2 --l4 udp --port 443 --m INTH1 --c 1
 
 
 #The generated telemetry should be visible in the grafana dashboard

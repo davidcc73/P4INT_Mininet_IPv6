@@ -1,7 +1,7 @@
-# 0 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4"
+# 0 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4"
 # 0 "<built-in>"
 # 0 "<command-line>"
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4"
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4"
 /* -*- P4_16 -*- */
 # 1 "/usr/share/p4c/p4include/core.p4" 1
 /*
@@ -97,7 +97,7 @@ extern bool static_assert(bool check, string message);
 
 /// Like the above but using a default message.
 extern bool static_assert(bool check);
-# 3 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
+# 3 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
 # 1 "/usr/share/p4c/p4include/v1model.p4" 1
 /*
 Copyright 2013-present Barefoot Networks, Inc.
@@ -883,8 +883,8 @@ package V1Switch<H, M>(Parser<H, M> p,
                        ComputeChecksum<H, M> ck,
                        Deparser<H> dep
                        );
-# 4 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/arp.p4" 1
+# 4 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/arp.p4" 1
 header arp_t {
   bit<16> h_type;
   bit<16> p_type;
@@ -892,23 +892,35 @@ header arp_t {
   bit<8> p_len;
   bit<16> op_code;
   bit<48> src_mac;
-  bit<32> src_ip;
+  bit<128> src_ip;
   bit<48> dst_mac;
-  bit<32> dst_ip;
+  bit<128> dst_ip;
 }
 
 struct digest_t {
     bit<48> src_addr;
     bit<9> in_port;
 }
-# 5 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/defines.p4" 1
+# 5 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/defines.p4" 1
 
 
 
-//protocol type
+//protocol type IPV4
+/*
+#define ETH_TYPE_IPV4 0x0800
+const bit<16> TYPE_ARP   = 0x0806;
+#define IP_PROTO_TCP 8w6
+#define IP_PROTO_UDP 8w17
+#define IP_VERSION_4 4w4
+#define IPV4_IHL_MIN 4w5
+#define MAX_PORTS 511
+*/
+
+// Protocol type IPv6
 
 const bit<16> TYPE_ARP = 0x0806;
+const bit<16> ICMPv6_TYPE = 0x86DD;
 
 
 
@@ -917,16 +929,16 @@ const bit<16> TYPE_ARP = 0x0806;
 
 // ARP RELATED CONSTS
 const bit<16> ARP_HTYPE = 0x0001; // Ethernet Hardware type is 1
-const bit<16> ARP_PTYPE = 0x0800; // Protocol used for ARP is IPV4
+const bit<16> ARP_PTYPE = 0x86DD; // Protocol used for ARP is IPV4
 const bit<8> ARP_HLEN = 6; // Ethernet address size is 6 bytes
 const bit<8> ARP_PLEN = 4; // IP address size is 4 bytes
 const bit<16> ARP_REQ = 1; // Operation 1 is request
 const bit<16> ARP_REPLY = 2; // Operation 2 is reply
 
 //packet type
-# 30 "/media/sf_Tese/Code/P4INT_Mininet/p4src/defines.p4"
+# 42 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/defines.p4"
 typedef bit<48> mac_t;
-typedef bit<32> ip_address_t;
+typedef bit<128> ip_address_t;
 typedef bit<16> l4_port_t;
 typedef bit<9> port_t;
 typedef bit<16> next_hop_id_t;
@@ -947,9 +959,9 @@ const bit<8> INT_TOTAL_HEADER_WORD = 4;
 const bit<8> CPU_MIRROR_SESSION_ID = 250;
 const bit<32> REPORT_MIRROR_SESSION_ID = 500;
 const bit<6> HW_ID = 1;
-const bit<8> REPORT_HDR_TTL = 64;
-# 6 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/headers.p4" 1
+const bit<8> REPORT_HDR_HOP_LIMIT = 64;//const bit<8> REPORT_HDR_TTL = 64;
+# 6 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/headers.p4" 1
 
 
 
@@ -960,22 +972,37 @@ header ethernet_t {
 }
 const bit<8> ETH_HEADER_LEN = 14;
 
+/*
 header ipv4_t {
-    bit<4> version;
-    bit<4> ihl;
-    bit<6> dscp;
-    bit<2> ecn;
+    bit<4>  version;
+    bit<4>  ihl;
+    bit<6>  dscp;
+    bit<2>  ecn;
     bit<16> len;
     bit<16> identification;
-    bit<3> flags;
+    bit<3>  flags;
     bit<13> frag_offset;
-    bit<8> ttl;
-    bit<8> protocol;
+    bit<8>  ttl;
+    bit<8>  protocol;
     bit<16> hdr_checksum;
     bit<32> src_addr;
     bit<32> dst_addr;
 }
 const bit<8> IPV4_MIN_HEAD_LEN = 20;
+*/
+
+header ipv6_t {
+    bit<4> version;
+    bit<6> dscp; //this and the next are the traffic class
+    bit<2> ecn;
+    bit<20> flow_label;
+    bit<16> payload_len;
+    bit<8> next_header;
+    bit<8> hop_limit;
+    bit<128> src_addr; //fifferent size from ipv4, masy cause problem
+    bit<128> dst_addr;
+}
+const bit<8> IPV6_MIN_HEAD_LEN = 40;
 
 header tcp_t {
     bit<16> src_port;
@@ -998,15 +1025,15 @@ header udp_t {
     bit<16> checksum;
 }
 const bit<8> UDP_HEADER_LEN = 8;
-# 7 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/int_headers.p4" 1
+# 7 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/int_headers.p4" 1
 
 
 
 
 
 
-// INT shim header for TCP/UDP
+// INT shim header for TCP/UDP  (contains addicional INT indormation??)
 header intl4_shim_t {
     bit<4> int_type; // Type of INT Header
     bit<2> npt; // Next protocol type
@@ -1018,7 +1045,7 @@ header intl4_shim_t {
 
 const bit<16> INT_SHIM_HEADER_SIZE = 4;
 
-// INT header
+// INT header (contains INT instructions??)
 header int_header_t {
     bit<4> ver; // Version
     bit<1> d; // Discard
@@ -1127,13 +1154,13 @@ struct headers {
     // Original Packet Headers
     ethernet_t ethernet;
     arp_t arp;
-    ipv4_t ipv4;
+    ipv6_t ipv6;
     udp_t udp;
     tcp_t tcp;
 
     // INT Report Encapsulation
     ethernet_t report_ethernet;
-    ipv4_t report_ipv4;
+    ipv6_t report_ipv6;
     udp_t report_udp;
 
     // INT Headers
@@ -1205,8 +1232,8 @@ struct local_metadata_t {
     preserving_metadata_t perserv_meta;
     digest_t mac_learn_digest; //ARP
 }
-# 8 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/parser.p4" 1
+# 8 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/(de)parser.p4" 1
 /*************************************************************************
 *********************** P A R S E R  *******************************
 *************************************************************************/
@@ -1223,7 +1250,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.ether_type) {
             TYPE_ARP: parse_arp;
-            0x0800 : parse_ipv4;
+            0x86DD : parse_ipv6;
             default : accept;
         }
     }
@@ -1236,9 +1263,9 @@ parser MyParser(packet_in packet,
       }
     }
 
-    state parse_ipv4 {
-        packet.extract(hdr.ipv4);
-        transition select(hdr.ipv4.protocol) {
+    state parse_ipv6 {
+        packet.extract(hdr.ipv6);
+        transition select(hdr.ipv6.next_header) {
             8w6 : parse_tcp;
             8w17 : parse_udp;
             default: accept;
@@ -1249,7 +1276,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.tcp);
         local_metadata.l4_src_port = hdr.tcp.src_port;
         local_metadata.l4_dst_port = hdr.tcp.dst_port;
-        transition select(hdr.ipv4.dscp) {
+        transition select(hdr.ipv6.dscp) {
             DSCP_INT &&& DSCP_MASK: parse_intl4_shim;
             default: accept;
         }
@@ -1259,7 +1286,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.udp);
         local_metadata.l4_src_port = hdr.udp.src_port;
         local_metadata.l4_dst_port = hdr.udp.dst_port;
-        transition select(hdr.ipv4.dscp) {
+        transition select(hdr.ipv6.dscp) {
             DSCP_INT &&& DSCP_MASK: parse_intl4_shim;
             default: accept;
         }
@@ -1287,7 +1314,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         // report headers
         packet.emit(hdr.report_ethernet);
-        packet.emit(hdr.report_ipv4);
+        packet.emit(hdr.report_ipv6);
         packet.emit(hdr.report_udp);
         packet.emit(hdr.report_group_header);
         packet.emit(hdr.report_individual_header);
@@ -1295,14 +1322,14 @@ control MyDeparser(packet_out packet, in headers hdr) {
         // original headers
         packet.emit(hdr.ethernet);
         packet.emit(hdr.arp);
-        packet.emit(hdr.ipv4);
+        packet.emit(hdr.ipv6);
         packet.emit(hdr.udp);
         packet.emit(hdr.tcp);
 
         // int header
-        packet.emit(hdr.intl4_shim);
-        packet.emit(hdr.int_header);
-        // hop metadata
+        packet.emit(hdr.intl4_shim); //extra int data
+        packet.emit(hdr.int_header); //the instructions
+        // hop metadata                     //the generated INT statistics at the current hop
         packet.emit(hdr.int_switch_id);
         packet.emit(hdr.int_level1_port_ids);
         packet.emit(hdr.int_hop_latency);
@@ -1313,40 +1340,38 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.int_egress_tx_util);
 
         // int data
-        packet.emit(hdr.int_data);
+        packet.emit(hdr.int_data); //the generated INT statistics from the previous hops
 
     }
 }
-# 9 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/checksum.p4" 1
+# 9 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/checksum.p4" 1
 
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/int_headers.p4" 1
-# 3 "/media/sf_Tese/Code/P4INT_Mininet/p4src/checksum.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/int_headers.p4" 1
+# 3 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/checksum.p4" 2
 
 control MyVerifyChecksum(inout headers hdr, inout local_metadata_t local_metadata) {
     apply { }
 }
 
 control MyComputeChecksum(inout headers hdr, inout local_metadata_t local_metadata){
-    apply{
-        update_checksum(
-            hdr.ipv4.isValid(),
-            { hdr.ipv4.version,
-              hdr.ipv4.ihl,
-              hdr.ipv4.dscp,
-              hdr.ipv4.ecn,
-              hdr.ipv4.len,
-              hdr.ipv4.identification,
-              hdr.ipv4.flags,
-              hdr.ipv4.frag_offset,
-              hdr.ipv4.ttl,
-              hdr.ipv4.protocol,
-              hdr.ipv4.src_addr,
-              hdr.ipv4.dst_addr },
-            hdr.ipv4.hdr_checksum,
+    apply{//no checksum at ipv6 header
+        /*
+        update_checksum(hdr.report_ipv6.isValid(),
+            { 
+              hdr.report_ipv6.version,
+              hdr.report_ipv6.dscp,
+              hdr.report_ipv6.ecn,
+              hdr.report_ipv6.flow_label,
+              hdr.report_ipv6.payload_len,
+              hdr.report_ipv6.next_header,
+              hdr.report_ipv6.hop_limit,
+              hdr.report_ipv6.src_addr,
+              hdr.report_ipv6.dst_addr},
+            hdr.report_ipv6.hdr_checksum,
             HashAlgorithm.csum16
         );
-
+*/
 
         // #ifdef __INT_HEADERS__
         // update_checksum(hdr.report_ipv4.isValid(),
@@ -1370,8 +1395,8 @@ control MyComputeChecksum(inout headers hdr, inout local_metadata_t local_metada
         // #endif // __INT_HEADERS__
     }
 }
-# 10 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/forward.p4" 1
+# 10 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/forward.p4" 1
 
 
 
@@ -1383,20 +1408,20 @@ control l3_forward(inout headers hdr,
         mark_to_drop(standard_metadata);
     }
 
-    action ipv4_forward(mac_t dstAddr, port_t port) {
+    action ipv6_forward(mac_t dstAddr, port_t port) {
         standard_metadata.egress_spec = port;
         standard_metadata.egress_port = port;
         hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
         hdr.ethernet.dst_addr = dstAddr;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+        hdr.ipv6.hop_limit = hdr.ipv6.hop_limit - 1;
     }
 
-    table ipv4_lpm {
+    table ipv6_lpm {
         key = {
-            hdr.ipv4.dst_addr : lpm;
+            hdr.ipv6.dst_addr : lpm;
         }
         actions = {
-            ipv4_forward;
+            ipv6_forward;
             drop;
             NoAction;
         }
@@ -1405,9 +1430,9 @@ control l3_forward(inout headers hdr,
     }
 
     apply {
-        if(hdr.ipv4.isValid()) {
+        if(hdr.ipv6.isValid()) {
           //  mac_learn.apply();
-            ipv4_lpm.apply();
+            ipv6_lpm.apply();
         }
 
     }
@@ -1433,7 +1458,7 @@ control port_forward(inout headers hdr,
 
     table tb_port_forward {
         key = {
-            hdr.ipv4.dst_addr: lpm;
+            hdr.ipv6.dst_addr: lpm;
         }
         actions = {
             set_egress_port;
@@ -1499,8 +1524,8 @@ control arpreply(inout headers hdr,
 control arplearn(inout headers hdr,
                        inout local_metadata_t local_metadata,
                        inout standard_metadata_t standard_metadata) {
-//code from lab11 of Univ South Carolina P4 training
-//requires local controller to insert the learned MACs
+    //code from lab11 of Univ South Carolina P4 training
+    //requires local controller to insert the learned MACs
     action drop(){
         mark_to_drop(standard_metadata);
     }
@@ -1528,8 +1553,8 @@ control arplearn(inout headers hdr,
         mac_learn.apply();
         }
 }
-# 11 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/int_source.p4" 1
+# 11 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/int_source.p4" 1
 /* -*- P4_16 -*- */
 control process_int_source_sink (
     inout headers hdr,
@@ -1585,7 +1610,7 @@ control process_int_source (
         hdr.intl4_shim.int_type = 1; // int_type: Hop-by-hop type (1) , destination type (2), MX-type (3)
         hdr.intl4_shim.npt = 0; // next protocol type: 0
         hdr.intl4_shim.len = INT_HEADER_WORD; // This is 3 from 0xC (INT_TOTAL_HEADER_SIZE >> 2)
-        hdr.intl4_shim.udp_ip_dscp = hdr.ipv4.dscp; // although should be first 6 bits of the second byte
+        hdr.intl4_shim.udp_ip_dscp = hdr.ipv6.dscp; // although should be first 6 bits of the second byte
         hdr.intl4_shim.udp_ip = 0; // although should be first 6 bits of the second byte
         //hdr.intl4_shim.tcp_ip_dscp = hdr.ipv4.dscp;             // TCP
         //hdr.intl4_shim.tcp_ip = 0;                              // TCP
@@ -1609,14 +1634,15 @@ control process_int_source (
         hdr.int_header.ds_flags = 0; // Domain specific flags
 
         // add the header len (3 words) to total len
-        hdr.ipv4.len = hdr.ipv4.len + INT_TOTAL_HEADER_SIZE;
+        //hdr.ipv4.len = hdr.ipv4.len + INT_TOTAL_HEADER_SIZE;         //len at IPv4 contains everything, including base IPv4 header
+        hdr.ipv6.payload_len = INT_TOTAL_HEADER_SIZE; //payload_len at IPv6 contains everything, excluding base IPv6 header
 
         if(hdr.udp.isValid()) {
-            hdr.udp.length_ = hdr.udp.length_ + INT_TOTAL_HEADER_SIZE;
+            hdr.udp.length_ = hdr.udp.length_ + INT_TOTAL_HEADER_SIZE; //WAS NOT CHANGED MAY CAUSE PROLEMS WITH LENGTH
         }
 
 
-        hdr.ipv4.dscp = DSCP_INT;
+        hdr.ipv6.dscp = DSCP_INT;
     }
 
     table tb_int_source {
@@ -1624,8 +1650,8 @@ control process_int_source (
             //configure for each flow to be monitored
             // 4 fields identifying flow
             //include ip src, udp/tcp src and dest too
-            hdr.ipv4.src_addr: ternary;
-            hdr.ipv4.dst_addr: ternary;
+            hdr.ipv6.src_addr: ternary;
+            hdr.ipv6.dst_addr: ternary;
             local_metadata.l4_src_port: ternary;
             local_metadata.l4_dst_port: ternary;
         }
@@ -1640,8 +1666,8 @@ control process_int_source (
         tb_int_source.apply();
     }
 }
-# 12 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/int_transit.p4" 1
+# 12 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/int_transit.p4" 1
 control process_int_transit (
     inout headers hdr,
     inout local_metadata_t local_metadata,
@@ -2033,19 +2059,19 @@ control process_int_transit (
     }
 
     apply {
-        tb_int_insert.apply();
+        tb_int_insert.apply(); //ONLY ADDS SWITCH ID AND IF TYPE TO LOCAL METADATA
         if (local_metadata.int_meta.transit == false) {
             return;
         }
-        tb_int_inst_0003.apply();
-        tb_int_inst_0407.apply();
+        tb_int_inst_0003.apply(); //both lines, reads INT instructions and creates statistics into the headers (hdr.int_q_occupancy.q_id =0;)
+        tb_int_inst_0407.apply(); //also sets their new sizes (local_metadata.int_meta.new_bytes = local_metadata.int_meta.new_bytes + 4)
 
         // Decrement remaining hop cnt
         hdr.int_header.remaining_hop_cnt = hdr.int_header.remaining_hop_cnt - 1;
 
         // Update headers lengths.
-        if (hdr.ipv4.isValid()) {
-            hdr.ipv4.len = hdr.ipv4.len + local_metadata.int_meta.new_bytes;
+        if (hdr.ipv6.isValid()) {
+            hdr.ipv6.payload_len = hdr.ipv6.payload_len + local_metadata.int_meta.new_bytes;
         }
         if (hdr.udp.isValid()) {
             hdr.udp.length_ = hdr.udp.length_ + local_metadata.int_meta.new_bytes;
@@ -2055,8 +2081,8 @@ control process_int_transit (
         }
     }
 }
-# 13 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
-# 1 "/media/sf_Tese/Code/P4INT_Mininet/p4src/int_sink.p4" 1
+# 13 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
+# 1 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/int_sink.p4" 1
 /* -*- P4_16 -*- */
 
 control process_int_sink (
@@ -2066,10 +2092,10 @@ control process_int_sink (
 
     action int_sink() {
         // restore original headers
-        hdr.ipv4.dscp = hdr.intl4_shim.udp_ip_dscp;
-        // restore length fields of IPv4 header and UDP header
+        hdr.ipv6.dscp = hdr.intl4_shim.udp_ip_dscp;
+        // restore length fields of IPv6 header and UDP header
         bit<16> len_bytes = (((bit<16>)hdr.intl4_shim.len) << 2) + INT_SHIM_HEADER_SIZE;
-        hdr.ipv4.len = hdr.ipv4.len - len_bytes;
+        hdr.ipv6.payload_len = hdr.ipv6.payload_len - len_bytes;
         if(hdr.udp.isValid()) {
             hdr.udp.length_ = hdr.udp.length_ - len_bytes;
         }
@@ -2126,32 +2152,59 @@ control process_int_report (
         hdr.report_ethernet.setValid();
         hdr.report_ethernet.dst_addr = mon_mac;
         hdr.report_ethernet.src_addr = src_mac;
-        hdr.report_ethernet.ether_type = 0x0800;
+        hdr.report_ethernet.ether_type = 0x86DD;
 
-        //Report IPV4 Header
+        //Report IPV4 Header 
+        /*
         hdr.report_ipv4.setValid();
-        hdr.report_ipv4.version = 4w4;
-        hdr.report_ipv4.ihl = 4w5;
+        hdr.report_ipv4.version = IP_VERSION_4;
+        hdr.report_ipv4.ihl = IPV4_IHL_MIN;
         hdr.report_ipv4.dscp = 6w0;
         hdr.report_ipv4.ecn = 2w0;
 
-        /* Total Len is report_ipv4_len + report_udp_len + report_fixed_hdr_len + ethernet_len + ipv4_totalLen */
-        hdr.report_ipv4.len = (bit<16>) IPV4_MIN_HEAD_LEN +
-                              (bit<16>) UDP_HEADER_LEN +
+        // Total Len is report_ipv4_len + report_udp_len + report_fixed_hdr_len + ethernet_len + ipv4_totalLen
+        hdr.report_ipv4.len = (bit<16>) IPV4_MIN_HEAD_LEN + 
+                              (bit<16>) UDP_HEADER_LEN + 
                               (bit<16>) REPORT_GROUP_HEADER_LEN +
                               (bit<16>) REPORT_INDIVIDUAL_HEADER_LEN +
-                              (bit<16>) ETH_HEADER_LEN +
-                              (bit<16>) IPV4_MIN_HEAD_LEN +
-                              (bit<16>) UDP_HEADER_LEN +
+                              (bit<16>) ETH_HEADER_LEN + 
+                              (bit<16>) IPV4_MIN_HEAD_LEN + 
+                              (bit<16>) UDP_HEADER_LEN + 
                               INT_SHIM_HEADER_SIZE + (((bit<16>) hdr.intl4_shim.len)<< 2);
 
         hdr.report_ipv4.identification = 0;
         hdr.report_ipv4.flags = 0;
         hdr.report_ipv4.frag_offset = 0;
         hdr.report_ipv4.ttl = REPORT_HDR_TTL;
-        hdr.report_ipv4.protocol = 8w17;
+        hdr.report_ipv4.protocol = IP_PROTO_UDP;
         hdr.report_ipv4.src_addr = src_ip;
         hdr.report_ipv4.dst_addr = mon_ip;
+        */
+
+        //Report IPV6 Header
+        hdr.report_ipv6.setValid();
+        hdr.report_ipv6.version = 4w6;
+        hdr.report_ipv6.dscp = 6w0;
+        hdr.report_ipv6.ecn = 2w0;
+        hdr.report_ipv6.flow_label = 20w0; //20w0 here is just a placeholder
+
+        // The same length but for ipv6, the base header length does not count for the payload length
+        hdr.report_ipv6.payload_len = //(bit<16>) IPV4_MIN_HEAD_LEN + 
+                              (bit<16>) UDP_HEADER_LEN +
+                              (bit<16>) REPORT_GROUP_HEADER_LEN +
+                              (bit<16>) REPORT_INDIVIDUAL_HEADER_LEN +
+                              (bit<16>) ETH_HEADER_LEN +
+                              (bit<16>) IPV6_MIN_HEAD_LEN +
+                              (bit<16>) UDP_HEADER_LEN +
+                              INT_SHIM_HEADER_SIZE + (((bit<16>) hdr.intl4_shim.len)<< 2);
+        hdr.report_ipv6.next_header = 8w0x11; // a 32-bit unsigned number with hex value 11 (UDP)
+        hdr.report_ipv6.hop_limit = REPORT_HDR_HOP_LIMIT;
+        hdr.report_ipv6.src_addr = src_ip;
+        hdr.report_ipv6.dst_addr = mon_ip;
+
+
+
+
 
         //Report UDP Header
         hdr.report_udp.setValid();
@@ -2161,7 +2214,7 @@ control process_int_report (
                                  (bit<16>) REPORT_GROUP_HEADER_LEN +
                                  (bit<16>) REPORT_INDIVIDUAL_HEADER_LEN +
                                  (bit<16>) ETH_HEADER_LEN +
-                                 (bit<16>) IPV4_MIN_HEAD_LEN +
+                                 (bit<16>) IPV6_MIN_HEAD_LEN +
                                  (bit<16>) UDP_HEADER_LEN +
                                  INT_SHIM_HEADER_SIZE + (((bit<16>) hdr.intl4_shim.len)<< 2);
 
@@ -2191,7 +2244,7 @@ control process_int_report (
         hdr.report_individual_header.domain_specific_md_bits = 0;
         hdr.report_individual_header.domain_specific_md_status = 0;
 
-        truncate((bit<32>)hdr.report_ipv4.len + (bit<32>) ETH_HEADER_LEN);
+        truncate((bit<32>)hdr.report_ipv6.payload_len + (bit<32>) ETH_HEADER_LEN);
     }
 
     table tb_generate_report {
@@ -2209,12 +2262,12 @@ control process_int_report (
         tb_generate_report.apply();
     }
 }
-# 14 "/media/sf_Tese/Code/P4INT_Mininet/p4src/intv8.p4" 2
+# 14 "/media/sf_Tese/Code/Mine/P4INT_Mininet_IPv6/p4src/intv8.p4" 2
 
 
 
 /*************************************************************************
-****************  I N G R E S S   P R O C E S S I N G   ******************
+****************  I N G R E S S   P R O C E S S I N G   ****************** (SOURCE NODE)
 *************************************************************************/
 
 control MyIngress(inout headers hdr,
@@ -2226,23 +2279,23 @@ control MyIngress(inout headers hdr,
         if (hdr.arp.isValid()){
             arpreply.apply(hdr, local_metadata, standard_metadata);
         }
-        else if(hdr.ipv4.isValid()) {
+        else if(hdr.ipv6.isValid()) { //FOR TESTING COMMENT ALL INT OPERATIONS
             //arplearn.apply(hdr, local_metadata, standard_metadata);
             l3_forward.apply(hdr, local_metadata, standard_metadata);
 
-            if(hdr.udp.isValid() ) {
+            if(hdr.udp.isValid() ) { //set if current hop is source or a sink to the packet (ONLY FOR UDP)
                 process_int_source_sink.apply(hdr, local_metadata, standard_metadata);
             }
 
-            if (local_metadata.int_meta.source == true) {
+            if (local_metadata.int_meta.source == true) { //(source) INSERT INT INSTRUCTIONS HEADER
                 process_int_source.apply(hdr, local_metadata);
             }
 
-            if (local_metadata.int_meta.sink == true && hdr.int_header.isValid()) {
+            if (local_metadata.int_meta.sink == true && hdr.int_header.isValid()) { //(sink) AND THE INSTRUCTION HEADER IS VALID
                 // clone packet for Telemetry Report
                 // clone3(CloneType.I2E, REPORT_MIRROR_SESSION_ID,standard_metadata);
                 // clone(CloneType.I2E, REPORT_MIRROR_SESSION_ID);
-                local_metadata.perserv_meta.ingress_port = standard_metadata.ingress_port;
+                local_metadata.perserv_meta.ingress_port = standard_metadata.ingress_port; //prepare info for report
                 local_metadata.perserv_meta.egress_port = standard_metadata.egress_port;
                 local_metadata.perserv_meta.deq_qdepth = standard_metadata.deq_qdepth;
                 local_metadata.perserv_meta.ingress_global_timestamp = standard_metadata.ingress_global_timestamp;
@@ -2253,7 +2306,7 @@ control MyIngress(inout headers hdr,
 }
 
 /*************************************************************************
-****************  E G R E S S   P R O C E S S I N G   *******************
+****************  E G R E S S   P R O C E S S I N G   ******************** (TRANSIT AND SINK NODE)
 *************************************************************************/
 
 
@@ -2269,8 +2322,8 @@ control MyEgress(inout headers hdr,
                 standard_metadata.deq_qdepth = local_metadata.perserv_meta.deq_qdepth;
                 standard_metadata.ingress_global_timestamp = local_metadata.perserv_meta.ingress_global_timestamp;
             }
-
-            process_int_transit.apply(hdr, local_metadata, standard_metadata);
+//FIQUEI AQUI!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            process_int_transit.apply(hdr, local_metadata, standard_metadata); //(transit) INFO ADDED TO PACKET AT DEPARSER
 
             if (standard_metadata.instance_type == 1) {
                 /* send int report */

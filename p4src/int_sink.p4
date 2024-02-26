@@ -7,10 +7,10 @@ control process_int_sink (
 
     action int_sink() {
         // restore original headers
-        hdr.ipv4.dscp = hdr.intl4_shim.udp_ip_dscp;
-        // restore length fields of IPv4 header and UDP header
+        hdr.ipv6.dscp = hdr.intl4_shim.udp_ip_dscp;
+        // restore length fields of IPv6 header and UDP header
         bit<16> len_bytes = (((bit<16>)hdr.intl4_shim.len) << 2) + INT_SHIM_HEADER_SIZE;
-        hdr.ipv4.len = hdr.ipv4.len - len_bytes;
+        hdr.ipv6.payload_len = hdr.ipv6.payload_len - len_bytes;
         if(hdr.udp.isValid()) {
             hdr.udp.length_ = hdr.udp.length_ - len_bytes;
         }
@@ -67,16 +67,17 @@ control process_int_report (
         hdr.report_ethernet.setValid();
         hdr.report_ethernet.dst_addr = mon_mac;
         hdr.report_ethernet.src_addr = src_mac;
-        hdr.report_ethernet.ether_type = ETH_TYPE_IPV4;
+        hdr.report_ethernet.ether_type = ETH_TYPE_IPV6;
 
-        //Report IPV4 Header
+        //Report IPV4 Header 
+        /*
         hdr.report_ipv4.setValid();
         hdr.report_ipv4.version = IP_VERSION_4;
         hdr.report_ipv4.ihl = IPV4_IHL_MIN;
         hdr.report_ipv4.dscp = 6w0;
         hdr.report_ipv4.ecn = 2w0;
 
-        /* Total Len is report_ipv4_len + report_udp_len + report_fixed_hdr_len + ethernet_len + ipv4_totalLen */
+        // Total Len is report_ipv4_len + report_udp_len + report_fixed_hdr_len + ethernet_len + ipv4_totalLen
         hdr.report_ipv4.len = (bit<16>) IPV4_MIN_HEAD_LEN + 
                               (bit<16>) UDP_HEADER_LEN + 
                               (bit<16>) REPORT_GROUP_HEADER_LEN +
@@ -93,6 +94,32 @@ control process_int_report (
         hdr.report_ipv4.protocol = IP_PROTO_UDP;
         hdr.report_ipv4.src_addr = src_ip;
         hdr.report_ipv4.dst_addr = mon_ip;
+        */
+
+        //Report IPV6 Header
+        hdr.report_ipv6.setValid();
+        hdr.report_ipv6.version = IP_VERSION_6;
+        hdr.report_ipv6.dscp = 6w0;
+        hdr.report_ipv6.ecn = 2w0;
+        hdr.report_ipv6.flow_label = 20w0;     //20w0 here is just a placeholder
+
+        // The same length but for ipv6, the base header length does not count for the payload length
+        hdr.report_ipv6.payload_len = //(bit<16>) IPV4_MIN_HEAD_LEN + 
+                              (bit<16>) UDP_HEADER_LEN + 
+                              (bit<16>) REPORT_GROUP_HEADER_LEN +
+                              (bit<16>) REPORT_INDIVIDUAL_HEADER_LEN +
+                              (bit<16>) ETH_HEADER_LEN + 
+                              (bit<16>) IPV6_MIN_HEAD_LEN + 
+                              (bit<16>) UDP_HEADER_LEN + 
+                              INT_SHIM_HEADER_SIZE + (((bit<16>) hdr.intl4_shim.len)<< 2);
+        hdr.report_ipv6.next_header = 8w0x11;        // a 32-bit unsigned number with hex value 11 (UDP)
+        hdr.report_ipv6.hop_limit = REPORT_HDR_HOP_LIMIT;
+        hdr.report_ipv6.src_addr = src_ip;
+        hdr.report_ipv6.dst_addr = mon_ip;
+
+
+
+
 
         //Report UDP Header
         hdr.report_udp.setValid();
@@ -102,7 +129,7 @@ control process_int_report (
                                  (bit<16>) REPORT_GROUP_HEADER_LEN +
                                  (bit<16>) REPORT_INDIVIDUAL_HEADER_LEN +
                                  (bit<16>) ETH_HEADER_LEN + 
-                                 (bit<16>) IPV4_MIN_HEAD_LEN + 
+                                 (bit<16>) IPV6_MIN_HEAD_LEN + 
                                  (bit<16>) UDP_HEADER_LEN +
                                  INT_SHIM_HEADER_SIZE + (((bit<16>) hdr.intl4_shim.len)<< 2);
         
@@ -132,7 +159,7 @@ control process_int_report (
         hdr.report_individual_header.domain_specific_md_bits = 0;
         hdr.report_individual_header.domain_specific_md_status = 0;
 
-        truncate((bit<32>)hdr.report_ipv4.len + (bit<32>) ETH_HEADER_LEN);
+        truncate((bit<32>)hdr.report_ipv6.payload_len + (bit<32>) ETH_HEADER_LEN);
     }
 
     table tb_generate_report {

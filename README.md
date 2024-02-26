@@ -1,6 +1,17 @@
 # P4INT_Mininet_IPv6
 Fork of project (ruimmpires/P4INT_Mininet) found at https://github.com/ruimmpires/P4INT_Mininet that implements INT in Mininet environment where the switches use P4.
-This repository aims to adapt that solution from IPv4 to IPv6
+This repository aims to adapt that solution from IPv4 to IPv6, ARP protocol is still used for address resolution
+
+Currently probles with trying to maintain the usage of ARP for name resolution!!!!!
+
+
+## NEW IPs
+h1: 10.0.1.1/24  -> IPv6: 2001:db8::1/128
+h2: 10.0.3.2/24  -> IPv6: 2001:db8::2/128
+h3: 10.0.5.3/24  -> IPv6: 2001:db8::3/128
+h4: 10.0.3.4/24  -> IPv6: 2001:db8::4/128
+h5: 10.0.3.5/24  -> IPv6: 2001:db8::5/128
+dummy:10.0.3.254 -> IPv6: 2001:db8::fe
 
 
 # P4INT_Mininet Original README.md

@@ -53,7 +53,7 @@ control process_int_source (
         hdr.intl4_shim.int_type = 1;                            // int_type: Hop-by-hop type (1) , destination type (2), MX-type (3)
         hdr.intl4_shim.npt = 0;                                 // next protocol type: 0
         hdr.intl4_shim.len = INT_HEADER_WORD;                   // This is 3 from 0xC (INT_TOTAL_HEADER_SIZE >> 2)
-        hdr.intl4_shim.udp_ip_dscp = hdr.ipv4.dscp;             // although should be first 6 bits of the second byte
+        hdr.intl4_shim.udp_ip_dscp = hdr.ipv6.dscp;             // although should be first 6 bits of the second byte
         hdr.intl4_shim.udp_ip = 0;                              // although should be first 6 bits of the second byte
         //hdr.intl4_shim.tcp_ip_dscp = hdr.ipv4.dscp;             // TCP
         //hdr.intl4_shim.tcp_ip = 0;                              // TCP
@@ -77,14 +77,15 @@ control process_int_source (
         hdr.int_header.ds_flags = 0;                            // Domain specific flags
 
         // add the header len (3 words) to total len
-        hdr.ipv4.len = hdr.ipv4.len + INT_TOTAL_HEADER_SIZE;
+        //hdr.ipv4.len = hdr.ipv4.len + INT_TOTAL_HEADER_SIZE;         //len at IPv4 contains everything, including base IPv4 header
+        hdr.ipv6.payload_len = INT_TOTAL_HEADER_SIZE;  //payload_len at IPv6 contains everything, excluding base IPv6 header
 
         if(hdr.udp.isValid()) {
-            hdr.udp.length_ = hdr.udp.length_ + INT_TOTAL_HEADER_SIZE;
+            hdr.udp.length_ = hdr.udp.length_ + INT_TOTAL_HEADER_SIZE;   //WAS NOT CHANGED MAY CAUSE PROLEMS WITH LENGTH
         }
         
               
-        hdr.ipv4.dscp = DSCP_INT;
+        hdr.ipv6.dscp = DSCP_INT;
     }
 
     table tb_int_source {
@@ -92,8 +93,8 @@ control process_int_source (
             //configure for each flow to be monitored
             // 4 fields identifying flow
             //include ip src, udp/tcp src and dest too
-            hdr.ipv4.src_addr: ternary;
-            hdr.ipv4.dst_addr: ternary;
+            hdr.ipv6.src_addr: ternary;
+            hdr.ipv6.dst_addr: ternary;
             local_metadata.l4_src_port: ternary;
             local_metadata.l4_dst_port: ternary;
         }

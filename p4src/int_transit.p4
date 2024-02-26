@@ -389,19 +389,19 @@ control process_int_transit (
     }
 
     apply {
-        tb_int_insert.apply();
+        tb_int_insert.apply();               //ONLY ADDS SWITCH ID AND IF TYPE TO LOCAL METADATA
         if (local_metadata.int_meta.transit == false) {
             return;
         }
-        tb_int_inst_0003.apply();
-        tb_int_inst_0407.apply();
+        tb_int_inst_0003.apply();           //both lines, reads INT instructions and creates statistics into the headers (hdr.int_q_occupancy.q_id =0;)
+        tb_int_inst_0407.apply();           //also sets their new sizes (local_metadata.int_meta.new_bytes = local_metadata.int_meta.new_bytes + 4)
 
         // Decrement remaining hop cnt
         hdr.int_header.remaining_hop_cnt = hdr.int_header.remaining_hop_cnt - 1;
 
         // Update headers lengths.
-        if (hdr.ipv4.isValid()) {
-            hdr.ipv4.len = hdr.ipv4.len + local_metadata.int_meta.new_bytes;
+        if (hdr.ipv6.isValid()) {
+            hdr.ipv6.payload_len = hdr.ipv6.payload_len + local_metadata.int_meta.new_bytes;
         }
         if (hdr.udp.isValid()) {
             hdr.udp.length_ = hdr.udp.length_ + local_metadata.int_meta.new_bytes;

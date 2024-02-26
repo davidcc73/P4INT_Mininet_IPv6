@@ -14,7 +14,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.ether_type) {
             TYPE_ARP: parse_arp;
-            ETH_TYPE_IPV4 : parse_ipv4;
+            ETH_TYPE_IPV6 : parse_ipv6;
             default : accept;
         }
     }
@@ -27,9 +27,9 @@ parser MyParser(packet_in packet,
       }
     }
 
-    state parse_ipv4 {
-        packet.extract(hdr.ipv4);
-        transition select(hdr.ipv4.protocol) {
+    state parse_ipv6 {
+        packet.extract(hdr.ipv6);
+        transition select(hdr.ipv6.next_header) {
             IP_PROTO_TCP : parse_tcp;
             IP_PROTO_UDP : parse_udp;
             default: accept;
@@ -40,7 +40,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.tcp);
         local_metadata.l4_src_port = hdr.tcp.src_port;
         local_metadata.l4_dst_port = hdr.tcp.dst_port;
-        transition select(hdr.ipv4.dscp) {
+        transition select(hdr.ipv6.dscp) {
             DSCP_INT &&& DSCP_MASK: parse_intl4_shim;
             default: accept;
         }
@@ -50,7 +50,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.udp);
         local_metadata.l4_src_port = hdr.udp.src_port;
         local_metadata.l4_dst_port = hdr.udp.dst_port;
-        transition select(hdr.ipv4.dscp) {
+        transition select(hdr.ipv6.dscp) {
             DSCP_INT &&& DSCP_MASK: parse_intl4_shim;
             default: accept;
         }
@@ -78,7 +78,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {           
         // report headers
         packet.emit(hdr.report_ethernet);
-        packet.emit(hdr.report_ipv4);
+        packet.emit(hdr.report_ipv6);
         packet.emit(hdr.report_udp);
         packet.emit(hdr.report_group_header);
         packet.emit(hdr.report_individual_header);
@@ -86,14 +86,14 @@ control MyDeparser(packet_out packet, in headers hdr) {
         // original headers
         packet.emit(hdr.ethernet);
         packet.emit(hdr.arp);
-        packet.emit(hdr.ipv4);
+        packet.emit(hdr.ipv6);
         packet.emit(hdr.udp);
         packet.emit(hdr.tcp);
 
         // int header
-        packet.emit(hdr.intl4_shim);
-        packet.emit(hdr.int_header);
-        // hop metadata
+        packet.emit(hdr.intl4_shim);        //extra int data
+        packet.emit(hdr.int_header);        //the instructions
+        // hop metadata                     //the generated INT statistics at the current hop
         packet.emit(hdr.int_switch_id);
         packet.emit(hdr.int_level1_port_ids);
         packet.emit(hdr.int_hop_latency);
@@ -104,7 +104,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.int_egress_tx_util);
 
         // int data
-        packet.emit(hdr.int_data);
+        packet.emit(hdr.int_data);          //the generated INT statistics from the previous hops
 
     }
 }

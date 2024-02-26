@@ -1,7 +1,8 @@
 #ifndef __DEFINES__
 #define __DEFINES__
 
-//protocol type
+//protocol type IPV4
+/*
 #define ETH_TYPE_IPV4 0x0800
 const bit<16> TYPE_ARP   = 0x0806;
 #define IP_PROTO_TCP 8w6
@@ -9,10 +10,21 @@ const bit<16> TYPE_ARP   = 0x0806;
 #define IP_VERSION_4 4w4
 #define IPV4_IHL_MIN 4w5
 #define MAX_PORTS 511
+*/
+
+// Protocol type IPv6
+#define ETH_TYPE_IPV6 0x86DD
+const bit<16> TYPE_ARP   = 0x0806;
+const bit<16> ICMPv6_TYPE = 0x86DD;
+#define IP_PROTO_TCP 8w6
+#define IP_PROTO_UDP 8w17
+#define IP_VERSION_6 4w6
+#define IPV6_HDR_LEN 40w8  // IPv6 header length in 8-byte units
+#define MAX_PORTS 511
 
 // ARP RELATED CONSTS
 const bit<16> ARP_HTYPE = 0x0001;    // Ethernet Hardware type is 1
-const bit<16> ARP_PTYPE = ETH_TYPE_IPV4; // Protocol used for ARP is IPV4
+const bit<16> ARP_PTYPE = ETH_TYPE_IPV6; // Protocol used for ARP is IPV4
 const bit<8>  ARP_HLEN  = 6;         // Ethernet address size is 6 bytes
 const bit<8>  ARP_PLEN  = 4;         // IP address size is 4 bytes
 const bit<16> ARP_REQ = 1;           // Operation 1 is request
@@ -28,7 +40,7 @@ const bit<16> ARP_REPLY = 2;         // Operation 2 is reply
 #define PKT_INSTANCE_TYPE_RESUBMIT 6
 
 typedef bit<48> mac_t;
-typedef bit<32> ip_address_t;
+typedef bit<128> ip_address_t;
 typedef bit<16> l4_port_t;
 typedef bit<9>  port_t;
 typedef bit<16> next_hop_id_t;
@@ -49,6 +61,6 @@ const bit<8> INT_TOTAL_HEADER_WORD = 4;
 const bit<8> CPU_MIRROR_SESSION_ID = 250;
 const bit<32> REPORT_MIRROR_SESSION_ID = 500;
 const bit<6> HW_ID = 1;
-const bit<8> REPORT_HDR_TTL = 64;
+const bit<8> REPORT_HDR_HOP_LIMIT = 64;//const bit<8> REPORT_HDR_TTL = 64;
 
 #endif

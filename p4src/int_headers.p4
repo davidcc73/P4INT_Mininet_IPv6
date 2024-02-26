@@ -4,7 +4,7 @@
 #ifndef __INT_HEADERS__
 #define __INT_HEADERS__
 
-// INT shim header for TCP/UDP
+// INT shim header for TCP/UDP  (contains addicional INT indormation??)
 header intl4_shim_t {
     bit<4> int_type;                // Type of INT Header
     bit<2> npt;                     // Next protocol type
@@ -16,7 +16,7 @@ header intl4_shim_t {
 
 const bit<16> INT_SHIM_HEADER_SIZE = 4;
 
-// INT header
+// INT header (contains INT instructions??)
 header int_header_t {
     bit<4>   ver;                    // Version
     bit<1>   d;                      // Discard
@@ -125,13 +125,13 @@ struct headers {
     // Original Packet Headers
     ethernet_t                  ethernet;
     arp_t                                  arp;
-    ipv4_t			            ipv4;
+    ipv6_t			            ipv6;
     udp_t			            udp;
     tcp_t			            tcp;
 
     // INT Report Encapsulation
     ethernet_t                  report_ethernet;
-    ipv4_t                      report_ipv4;
+    ipv6_t                      report_ipv6;
     udp_t                       report_udp;
 
     // INT Headers

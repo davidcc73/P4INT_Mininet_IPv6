@@ -8,6 +8,7 @@ header ethernet_t {
 }
 const bit<8> ETH_HEADER_LEN = 14;
 
+/*
 header ipv4_t {
     bit<4>  version;
     bit<4>  ihl;
@@ -24,18 +25,20 @@ header ipv4_t {
     bit<32> dst_addr;
 }
 const bit<8> IPV4_MIN_HEAD_LEN = 20;
+*/
 
 header ipv6_t {
     bit<4>  version;
-    bit<8>  traffic_class;
+    bit<6>  dscp;               //this and the next are the traffic class
+    bit<2>  ecn;
     bit<20> flow_label;
     bit<16> payload_len;
     bit<8>  next_header;
     bit<8>  hop_limit;
-    bit<128> src_addr;
+    bit<128> src_addr;          //fifferent size from ipv4, masy cause problem
     bit<128> dst_addr;
 }
-const bit<8> IPV6_BASE_HEAD_LEN = 40;
+const bit<8> IPV6_MIN_HEAD_LEN = 40;
 
 header tcp_t {
     bit<16> src_port;

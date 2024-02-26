@@ -9,20 +9,20 @@ control l3_forward(inout headers hdr,
         mark_to_drop(standard_metadata);
     }
 
-    action ipv4_forward(mac_t dstAddr, port_t port) {
+    action ipv6_forward(mac_t dstAddr, port_t port) {
         standard_metadata.egress_spec = port;
         standard_metadata.egress_port = port;
         hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
         hdr.ethernet.dst_addr = dstAddr;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+        hdr.ipv6.hop_limit = hdr.ipv6.hop_limit - 1;
     }
     	
-    table ipv4_lpm {
+    table ipv6_lpm {
         key = {
-            hdr.ipv4.dst_addr : lpm;
+            hdr.ipv6.dst_addr : lpm;
         }
         actions = {
-            ipv4_forward;
+            ipv6_forward;
             drop;
             NoAction;
         }
@@ -31,9 +31,9 @@ control l3_forward(inout headers hdr,
     }
     
     apply {
-        if(hdr.ipv4.isValid()) {
+        if(hdr.ipv6.isValid()) {
           //  mac_learn.apply();
-            ipv4_lpm.apply();
+            ipv6_lpm.apply();
         }
             
     }
@@ -59,7 +59,7 @@ control port_forward(inout headers hdr,
 
     table tb_port_forward {
         key = {
-            hdr.ipv4.dst_addr: lpm;
+            hdr.ipv6.dst_addr: lpm;
         }
         actions = {
             set_egress_port;
@@ -125,8 +125,8 @@ control arpreply(inout headers hdr,
 control arplearn(inout headers hdr,
                        inout local_metadata_t local_metadata,
                        inout standard_metadata_t standard_metadata) {
-//code from lab11 of Univ South Carolina P4 training
-//requires local controller to insert the learned MACs
+    //code from lab11 of Univ South Carolina P4 training
+    //requires local controller to insert the learned MACs
     action drop(){
         mark_to_drop(standard_metadata);
     }
