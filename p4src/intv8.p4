@@ -1,13 +1,16 @@
 /* -*- P4_16 -*- */
 #include <core.p4>
 #include <v1model.p4>
-#include "arp.p4"
-#include "defines.p4"
+
 #include "headers.p4"
 #include "int_headers.p4"
 #include "(de)parser.p4"
 #include "checksum.p4"
+
+#include "arp.p4"
 #include "forward.p4"
+
+#include "defines.p4"
 #include "int_source.p4"
 #include "int_transit.p4"
 #include "int_sink.p4"
@@ -70,7 +73,6 @@ control MyEgress(inout headers hdr,
                 standard_metadata.deq_qdepth = local_metadata.perserv_meta.deq_qdepth;
                 standard_metadata.ingress_global_timestamp = local_metadata.perserv_meta.ingress_global_timestamp;
             }
-//FIQUEI AQUI!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             process_int_transit.apply(hdr, local_metadata, standard_metadata);   //(transit) INFO ADDED TO PACKET AT DEPARSER
 
             if (standard_metadata.instance_type == PKT_INSTANCE_TYPE_INGRESS_CLONE) {
