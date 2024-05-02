@@ -2,7 +2,7 @@
 Fork of project (ruimmpires/P4INT_Mininet) found at https://github.com/ruimmpires/P4INT_Mininet that implements INT in Mininet environment where the switches use P4.
 This repository aims to adapt that solution from IPv4 to IPv6, ARP protocol is still used for address resolution
 
-Currently probles with trying to maintain the usage of ARP for name resolution!!!!!
+Due to problems with trying to maintain the usage of ARP for name resolution, this project is closed, but a working implementation of INT in an IPv6 environment can be seen at https://github.com/davidcc73/p4-srv6-INT 
 
 
 ## NEW IPs
